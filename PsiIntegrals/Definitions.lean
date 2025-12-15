@@ -160,8 +160,9 @@ end WeakComposition
 
 variable {n : ℕ} {d : ℤ}
 
+@[expose] public section
 /-- A function on weak compositions that is symmetric under the Sₙ action. -/
-@[expose] public def IsSymmetric (D : WeakComposition n d → ℚ) : Prop :=
+def IsSymmetric (D : WeakComposition n d → ℚ) : Prop :=
   ∀ (σ : Equiv.Perm (Fin n)) (e : WeakComposition n d),
     D ⟨e ∘ σ.symm,
        by simp only [comp_apply]
@@ -170,18 +171,18 @@ variable {n : ℕ} {d : ℤ}
        fun i => by simp only [comp_apply]; exact e.nonneg _⟩ = D e
 
 /-- The log-concavity condition for D. -/
-@[expose] public def SatisfiesLogConcavity (D : WeakComposition n d → ℚ) : Prop :=
+def SatisfiesLogConcavity (D : WeakComposition n d → ℚ) : Prop :=
   ∀ (e : WeakComposition n d) (i j : Fin n) (hij : i ≠ j)
     (hi : 1 ≤ e i) (hj : 1 ≤ e j),
     D e ^ 2 ≥ D (e.modify i j hi hij) * D (e.modify j i hj hij.symm)
 
 /-- D is strictly positive. -/
-@[expose] public def IsStrictlyPositive (D : WeakComposition n d → ℚ) : Prop :=
+def IsStrictlyPositive (D : WeakComposition n d → ℚ) : Prop :=
   ∀ e, 0 < D e
 
 /-- A function `D` on weak compositions satisfying the three conditions:
     Sₙ-symmetry, log-concavity, and strict positivity.-/
-public structure SymmetricLogConcaveFunction (n : ℕ) (d : ℤ) where
+structure SymmetricLogConcaveFunction (n : ℕ) (d : ℤ) where
   /-- The function D : E(n,d) → ℚ -/
   D : WeakComposition n d → ℚ
   /-- D(e ∘ σ⁻¹) = D(e) for all permutations σ -/
@@ -194,54 +195,54 @@ public structure SymmetricLogConcaveFunction (n : ℕ) (d : ℤ) where
 /-! ### Auxiliary Definitions for Proofs -/
 
 /-- A sequence `s : ℤ → ℚ` is log-concave on `[0, q]`. -/
-@[expose] public def LogConcaveOn (s : ℤ → ℚ) (q : ℤ) : Prop :=
+def LogConcaveOn (s : ℤ → ℚ) (q : ℤ) : Prop :=
   ∀ t, 1 ≤ t → t ≤ q - 1 → s t ^ 2 ≥ s (t - 1) * s (t + 1)
 
 /-- Apply log-concavity at a point. -/
-public lemma LogConcaveOn.apply {s : ℤ → ℚ} {q : ℤ} (h : LogConcaveOn s q)
+lemma LogConcaveOn.apply {s : ℤ → ℚ} {q : ℤ} (h : LogConcaveOn s q)
     (t : ℤ) (ht1 : 1 ≤ t) (htq : t ≤ q - 1) : s t ^ 2 ≥ s (t - 1) * s (t + 1) :=
   h t ht1 htq
 
 /-- A sequence is palindromic on `[0, q]`. -/
-@[expose] public def IsPalindromicOn (s : ℤ → ℚ) (q : ℤ) : Prop :=
+def IsPalindromicOn (s : ℤ → ℚ) (q : ℤ) : Prop :=
   ∀ t, 0 ≤ t → t ≤ q → s t = s (q - t)
 
 /-- Apply palindromicity at a point. -/
-public lemma IsPalindromicOn.apply {s : ℤ → ℚ} {q : ℤ} (h : IsPalindromicOn s q)
+lemma IsPalindromicOn.apply {s : ℤ → ℚ} {q : ℤ} (h : IsPalindromicOn s q)
     (t : ℤ) (ht0 : 0 ≤ t) (htq : t ≤ q) : s t = s (q - t) :=
   h t ht0 htq
 
 /-- Construct an IsPalindromicOn proof. -/
-public lemma IsPalindromicOn.mk {s : ℤ → ℚ} {q : ℤ}
+lemma IsPalindromicOn.mk {s : ℤ → ℚ} {q : ℤ}
     (h : ∀ t, 0 ≤ t → t ≤ q → s t = s (q - t)) :
     IsPalindromicOn s q :=
   h
 
 /-- A sequence is positive on `[0, q]`. -/
-@[expose] public def IsPositiveOn (s : ℤ → ℚ) (q : ℤ) : Prop :=
+def IsPositiveOn (s : ℤ → ℚ) (q : ℤ) : Prop :=
   ∀ t, 0 ≤ t → t ≤ q → 0 < s t
 
 /-- Apply positivity at a point. -/
-public lemma IsPositiveOn.apply {s : ℤ → ℚ} {q : ℤ} (h : IsPositiveOn s q)
+lemma IsPositiveOn.apply {s : ℤ → ℚ} {q : ℤ} (h : IsPositiveOn s q)
     (t : ℤ) (ht0 : 0 ≤ t) (htq : t ≤ q) : 0 < s t :=
   h t ht0 htq
 
 /-- The "imbalance" of a vector: sum of squares. -/
-@[expose] public def imbalance (e : Fin n → ℤ) : ℤ := ∑ i, (e i) ^ 2
+def imbalance (e : Fin n → ℤ) : ℤ := ∑ i, (e i) ^ 2
 
 /-- Imbalance equals the sum of squares of entries. -/
-public lemma imbalance_eq (e : Fin n → ℤ) : imbalance e = ∑ i, (e i) ^ 2 := by
+lemma imbalance_eq (e : Fin n → ℤ) : imbalance e = ∑ i, (e i) ^ 2 := by
   unfold imbalance; rfl
 
 /-- The maximum entry of a vector. -/
-@[expose] public noncomputable def maxEntry (e : Fin n → ℤ) (hn : 0 < n) : ℤ :=
+noncomputable def maxEntry (e : Fin n → ℤ) (hn : 0 < n) : ℤ :=
   ((Finset.univ : Finset (Fin n)).image e).max'
     (by
       refine ⟨e ⟨0, hn⟩, ?_⟩
       exact Finset.mem_image.2 ⟨⟨0, hn⟩, Finset.mem_univ _, rfl⟩)
 
 /-- There exists an index achieving the maximum entry value. -/
-public lemma exists_eq_maxEntry (e : Fin n → ℤ) (hn : 0 < n) :
+lemma exists_eq_maxEntry (e : Fin n → ℤ) (hn : 0 < n) :
     ∃ i : Fin n, e i = maxEntry e hn := by
   unfold maxEntry
   set s : Finset ℤ := (Finset.univ : Finset (Fin n)).image e
@@ -251,7 +252,7 @@ public lemma exists_eq_maxEntry (e : Fin n → ℤ) (hn : 0 < n) :
   exact ⟨i, hi⟩
 
 /-- Every entry is at most the maximum entry. -/
-public lemma le_maxEntry (e : Fin n → ℤ) (hn : 0 < n) (i : Fin n) :
+lemma le_maxEntry (e : Fin n → ℤ) (hn : 0 < n) (i : Fin n) :
     e i ≤ maxEntry e hn := by
   unfold maxEntry
   set s : Finset ℤ := (Finset.univ : Finset (Fin n)).image e
@@ -260,26 +261,13 @@ public lemma le_maxEntry (e : Fin n → ℤ) (hn : 0 < n) (i : Fin n) :
   exact Finset.le_max' s (e i) hi
 
 /-- Count of non-zero entries. -/
-public def nonzeroCount (e : Fin n → ℤ) : ℕ :=
+def nonzeroCount (e : Fin n → ℤ) : ℕ :=
   (Finset.univ.filter (fun i => e i ≠ 0)).card
 
 /-- A vector is balanced if all entries differ by at most 1. -/
-@[expose] public def IsBalanced (e : Fin n → ℤ) : Prop :=
+def IsBalanced (e : Fin n → ℤ) : Prop :=
   ∀ i j, e i ≤ e j + 1 ∧ e j ≤ e i + 1
 
-/-- Negation of balanced: there exist indices with entries differing by at least 2. -/
-public lemma not_isBalanced_iff {e : Fin n → ℤ} :
-    ¬ IsBalanced e ↔ ∃ i j, i ≠ j ∧ e j + 2 ≤ e i := by
-  unfold IsBalanced
-  simp only [not_forall, not_and_or, not_le]
-  constructor
-  · intro ⟨i, j, hij⟩
-    rcases hij with h1 | h2
-    · exact ⟨i, j, fun heq => by simp only [heq] at h1; omega, by omega⟩
-    · exact ⟨j, i, fun heq => by simp only [heq] at h2; omega, by omega⟩
-  · intro ⟨i, j, _, hdiff⟩
-    exact ⟨i, j, Or.inl (by omega)⟩
-
 /-- A vector is concentrated if it equals `d • δₖ` for some `k`. -/
-@[expose] public def IsConcentrated (d : ℤ) (e : Fin n → ℤ) : Prop :=
+def IsConcentrated (d : ℤ) (e : Fin n → ℤ) : Prop :=
   ∃ k, ∀ i, e i = if i = k then d else 0

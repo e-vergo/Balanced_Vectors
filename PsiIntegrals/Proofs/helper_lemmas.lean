@@ -219,6 +219,19 @@ lemma imbalance_decreases (e : WeakComposition n d) (i j : Fin n)
     _ < (e i)^2 + (e j)^2 + rest := by linarith
     _ = ∑ k, (e k)^2 := hsum_orig.symm
 
+/-- Negation of balanced: there exist indices with entries differing by at least 2. -/
+lemma not_isBalanced_iff {e : Fin n → ℤ} :
+    ¬ IsBalanced e ↔ ∃ i j, i ≠ j ∧ e j + 2 ≤ e i := by
+  unfold IsBalanced
+  simp only [not_forall, not_and_or, not_le]
+  constructor
+  · intro ⟨i, j, hij⟩
+    rcases hij with h1 | h2
+    · exact ⟨i, j, fun heq => by simp only [heq] at h1; omega, by omega⟩
+    · exact ⟨j, i, fun heq => by simp only [heq] at h2; omega, by omega⟩
+  · intro ⟨i, j, _, hdiff⟩
+    exact ⟨i, j, Or.inl (by omega)⟩
+
 /-- If a vector is not balanced, there exist i, j with e_i ≥ e_j + 2. -/
 lemma exists_imbalanced_pair (e : Fin n → ℤ) (h : ¬ IsBalanced e) :
     ∃ i j, i ≠ j ∧ e j + 2 ≤ e i :=
