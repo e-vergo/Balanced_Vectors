@@ -198,41 +198,14 @@ structure SymmetricLogConcaveFunction (n : ℕ) (d : ℤ) where
 def LogConcaveOn (s : ℤ → ℚ) (q : ℤ) : Prop :=
   ∀ t, 1 ≤ t → t ≤ q - 1 → s t ^ 2 ≥ s (t - 1) * s (t + 1)
 
-/-- Apply log-concavity at a point. -/
-lemma LogConcaveOn.apply {s : ℤ → ℚ} {q : ℤ} (h : LogConcaveOn s q)
-    (t : ℤ) (ht1 : 1 ≤ t) (htq : t ≤ q - 1) : s t ^ 2 ≥ s (t - 1) * s (t + 1) :=
-  h t ht1 htq
-
 /-- A sequence is palindromic on `[0, q]`. -/
 def IsPalindromicOn (s : ℤ → ℚ) (q : ℤ) : Prop :=
   ∀ t, 0 ≤ t → t ≤ q → s t = s (q - t)
 
-/-- Apply palindromicity at a point. -/
-lemma IsPalindromicOn.apply {s : ℤ → ℚ} {q : ℤ} (h : IsPalindromicOn s q)
-    (t : ℤ) (ht0 : 0 ≤ t) (htq : t ≤ q) : s t = s (q - t) :=
-  h t ht0 htq
-
-/-- Construct an IsPalindromicOn proof. -/
-lemma IsPalindromicOn.mk {s : ℤ → ℚ} {q : ℤ}
-    (h : ∀ t, 0 ≤ t → t ≤ q → s t = s (q - t)) :
-    IsPalindromicOn s q :=
-  h
 
 /-- A sequence is positive on `[0, q]`. -/
 def IsPositiveOn (s : ℤ → ℚ) (q : ℤ) : Prop :=
   ∀ t, 0 ≤ t → t ≤ q → 0 < s t
-
-/-- Apply positivity at a point. -/
-lemma IsPositiveOn.apply {s : ℤ → ℚ} {q : ℤ} (h : IsPositiveOn s q)
-    (t : ℤ) (ht0 : 0 ≤ t) (htq : t ≤ q) : 0 < s t :=
-  h t ht0 htq
-
-/-- The "imbalance" of a vector: sum of squares. -/
-def imbalance (e : Fin n → ℤ) : ℤ := ∑ i, (e i) ^ 2
-
-/-- Imbalance equals the sum of squares of entries. -/
-lemma imbalance_eq (e : Fin n → ℤ) : imbalance e = ∑ i, (e i) ^ 2 := by
-  unfold imbalance; rfl
 
 /-- The maximum entry of a vector. -/
 noncomputable def maxEntry (e : Fin n → ℤ) (hn : 0 < n) : ℤ :=
@@ -241,24 +214,8 @@ noncomputable def maxEntry (e : Fin n → ℤ) (hn : 0 < n) : ℤ :=
       refine ⟨e ⟨0, hn⟩, ?_⟩
       exact Finset.mem_image.2 ⟨⟨0, hn⟩, Finset.mem_univ _, rfl⟩)
 
-/-- There exists an index achieving the maximum entry value. -/
-lemma exists_eq_maxEntry (e : Fin n → ℤ) (hn : 0 < n) :
-    ∃ i : Fin n, e i = maxEntry e hn := by
-  unfold maxEntry
-  set s : Finset ℤ := (Finset.univ : Finset (Fin n)).image e
-  have hs : s.Nonempty := ⟨e ⟨0, hn⟩, Finset.mem_image.2 ⟨⟨0, hn⟩, Finset.mem_univ _, rfl⟩⟩
-  have hmem : s.max' hs ∈ s := Finset.max'_mem s hs
-  obtain ⟨i, _, hi⟩ := Finset.mem_image.1 hmem
-  exact ⟨i, hi⟩
-
-/-- Every entry is at most the maximum entry. -/
-lemma le_maxEntry (e : Fin n → ℤ) (hn : 0 < n) (i : Fin n) :
-    e i ≤ maxEntry e hn := by
-  unfold maxEntry
-  set s : Finset ℤ := (Finset.univ : Finset (Fin n)).image e
-  have hs : s.Nonempty := ⟨e ⟨0, hn⟩, Finset.mem_image.2 ⟨⟨0, hn⟩, Finset.mem_univ _, rfl⟩⟩
-  have hi : e i ∈ s := Finset.mem_image.2 ⟨i, Finset.mem_univ _, rfl⟩
-  exact Finset.le_max' s (e i) hi
+/-- The "imbalance" of a vector: sum of squares. -/
+def imbalance (e : Fin n → ℤ) : ℤ := ∑ i, (e i) ^ 2
 
 /-- Count of non-zero entries. -/
 def nonzeroCount (e : Fin n → ℤ) : ℕ :=
@@ -271,3 +228,47 @@ def IsBalanced (e : Fin n → ℤ) : Prop :=
 /-- A vector is concentrated if it equals `d • δₖ` for some `k`. -/
 def IsConcentrated (d : ℤ) (e : Fin n → ℤ) : Prop :=
   ∃ k, ∀ i, e i = if i = k then d else 0
+
+/-! ### Slice Analysis Definitions -/
+
+/-- Auxiliary: sum is preserved when we put t at position i and (q-t) at position j. -/
+lemma sum_slice_eq {e : Fin n → ℤ} {i j : Fin n} (hij : i ≠ j) (hsum : ∑ k, e k = d)
+    (t : ℤ) :
+    ∑ k, (if k = i then t else if k = j then e i + e j - t else e k) = d := by
+  classical
+  have hslice : (∑ k, (if k = i then t else if k = j then e i + e j - t else e k))
+      = t + (e i + e j - t) + ∑ k ∈ (Finset.univ.erase i).erase j, e k := by
+    simpa using WeakComposition.sum_ite_ite_eq_add_add_sum_erase_erase e i j hij t (e i + e j - t)
+  have hi_sum : e i + ∑ k ∈ Finset.univ.erase i, e k = d := by
+    rw [Finset.add_sum_erase _ _ (Finset.mem_univ i), hsum]
+  have hj_sum : e j + ∑ k ∈ (Finset.univ.erase i).erase j, e k = ∑ k ∈ Finset.univ.erase i, e k := by
+    have hjmem : j ∈ (Finset.univ.erase i : Finset (Fin n)) :=
+      Finset.mem_erase.mpr ⟨hij.symm, Finset.mem_univ j⟩
+    rw [Finset.add_sum_erase _ _ hjmem]
+  have hdecomp : e i + e j + ∑ k ∈ (Finset.univ.erase i).erase j, e k = d := by
+    linarith [hi_sum, hj_sum]
+  calc (∑ k, (if k = i then t else if k = j then e i + e j - t else e k))
+      = t + (e i + e j - t) + ∑ k ∈ (Finset.univ.erase i).erase j, e k := hslice
+    _ = e i + e j + ∑ k ∈ (Finset.univ.erase i).erase j, e k := by ring
+    _ = d := hdecomp
+
+/-- Given a weak composition e and distinct positions i, j, construct the composition
+    with value t at position i and (e_i + e_j - t) at position j. -/
+def sliceComposition (e : WeakComposition n d) (i j : Fin n) (hij : i ≠ j)
+    (t : ℤ) (ht : 0 ≤ t) (htq : t ≤ e i + e j) : WeakComposition n d where
+  toFun := fun k => if k = i then t else if k = j then e i + e j - t else e k
+  sum_eq := sum_slice_eq hij e.sum_eq t
+  nonneg := fun k => by
+    split_ifs with hki hkj
+    · exact ht
+    · omega
+    · exact e.nonneg k
+
+/-- The slice sequence for D. -/
+noncomputable def sliceSeq (D : WeakComposition n d → ℚ) (e : WeakComposition n d)
+    (i j : Fin n) (hij : i ≠ j) : ℤ → ℚ := fun t =>
+  if h : 0 ≤ t ∧ t ≤ e i + e j then
+    D (sliceComposition e i j hij t h.1 h.2)
+  else 0
+
+end

@@ -5,7 +5,7 @@ Authors: Eric Vergo
 -/
 module
 
-public import PsiIntegrals.Definitions
+public import BalancedVectors.Definitions
 
 /-!
 # Statement of the Main Theorem

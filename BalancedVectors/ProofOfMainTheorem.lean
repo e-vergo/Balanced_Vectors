@@ -5,8 +5,8 @@ Authors: Eric Vergo
 -/
 module
 
-public import PsiIntegrals.MainTheorem
-import all PsiIntegrals.Proofs.helper_lemmas
+public import BalancedVectors.MainTheorem
+import all BalancedVectors.Proofs.helper_lemmas
 
 /-!
 # Proof of the Main Theorem
@@ -21,8 +21,6 @@ on weak compositions.
 -/
 
 open Finset BigOperators Function
-
-variable {n : ℕ} {d : ℤ}
 
 /-- **Main Theorem (Paper formulation - Combined).**
     For any symmetric log-concave function D on weak compositions E(n,d):

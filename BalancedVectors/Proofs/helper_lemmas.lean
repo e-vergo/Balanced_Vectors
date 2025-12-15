@@ -5,7 +5,7 @@ Authors: Eric Vergo
 -/
 module
 
-public import PsiIntegrals.Definitions
+public import BalancedVectors.Definitions
 
 /-!
 # Helper Lemmas for the Main Theorem
@@ -28,6 +28,52 @@ maximization direction, and on `d - maxEntry` for the minimization direction.
 -/
 
 open Finset BigOperators Function WeakComposition
+
+
+/-- Apply log-concavity at a point. -/
+lemma LogConcaveOn.apply {s : ℤ → ℚ} {q : ℤ} (h : LogConcaveOn s q)
+    (t : ℤ) (ht1 : 1 ≤ t) (htq : t ≤ q - 1) : s t ^ 2 ≥ s (t - 1) * s (t + 1) :=
+  h t ht1 htq
+
+/-- Apply positivity at a point. -/
+lemma IsPositiveOn.apply {s : ℤ → ℚ} {q : ℤ} (h : IsPositiveOn s q)
+    (t : ℤ) (ht0 : 0 ≤ t) (htq : t ≤ q) : 0 < s t :=
+  h t ht0 htq
+
+
+/-- Apply palindromicity at a point. -/
+lemma IsPalindromicOn.apply {s : ℤ → ℚ} {q : ℤ} (h : IsPalindromicOn s q)
+    (t : ℤ) (ht0 : 0 ≤ t) (htq : t ≤ q) : s t = s (q - t) :=
+  h t ht0 htq
+
+/-- Construct an IsPalindromicOn proof. -/
+lemma IsPalindromicOn.mk {s : ℤ → ℚ} {q : ℤ}
+    (h : ∀ t, 0 ≤ t → t ≤ q → s t = s (q - t)) :
+    IsPalindromicOn s q := h
+
+/-- Imbalance equals the sum of squares of entries. -/
+lemma imbalance_eq (e : Fin n → ℤ) : imbalance e = ∑ i, (e i) ^ 2 := by
+  unfold imbalance; rfl
+
+/-- There exists an index achieving the maximum entry value. -/
+lemma exists_eq_maxEntry (e : Fin n → ℤ) (hn : 0 < n) :
+    ∃ i : Fin n, e i = maxEntry e hn := by
+  unfold maxEntry
+  set s : Finset ℤ := (Finset.univ : Finset (Fin n)).image e
+  have hs : s.Nonempty := ⟨e ⟨0, hn⟩, Finset.mem_image.2 ⟨⟨0, hn⟩, Finset.mem_univ _, rfl⟩⟩
+  have hmem : s.max' hs ∈ s := Finset.max'_mem s hs
+  obtain ⟨i, _, hi⟩ := Finset.mem_image.1 hmem
+  exact ⟨i, hi⟩
+
+/-- Every entry is at most the maximum entry. -/
+lemma le_maxEntry (e : Fin n → ℤ) (hn : 0 < n) (i : Fin n) :
+    e i ≤ maxEntry e hn := by
+  unfold maxEntry
+  set s : Finset ℤ := (Finset.univ : Finset (Fin n)).image e
+  have hs : s.Nonempty := ⟨e ⟨0, hn⟩, Finset.mem_image.2 ⟨⟨0, hn⟩, Finset.mem_univ _, rfl⟩⟩
+  have hi : e i ∈ s := Finset.mem_image.2 ⟨i, Finset.mem_univ _, rfl⟩
+  exact Finset.le_max' s (e i) hi
+
 
 /-- Each entry of a weak composition is bounded by d. -/
 lemma WeakComposition.entry_le_d (e : WeakComposition n d) (i : Fin n) : e i ≤ d := by
@@ -238,46 +284,6 @@ lemma exists_imbalanced_pair (e : Fin n → ℤ) (h : ¬ IsBalanced e) :
   not_isBalanced_iff.mp h
 
 /-! ### Slice Analysis -/
-
-/-- Auxiliary: sum is preserved when we put t at position i and (q-t) at position j. -/
-lemma sum_slice_eq {e : Fin n → ℤ} {i j : Fin n} (hij : i ≠ j) (hsum : ∑ k, e k = d)
-    (t : ℤ) :
-    ∑ k, (if k = i then t else if k = j then e i + e j - t else e k) = d := by
-  classical
-  have hslice : (∑ k, (if k = i then t else if k = j then e i + e j - t else e k))
-      = t + (e i + e j - t) + ∑ k ∈ (univ.erase i).erase j, e k := by
-    simpa using sum_ite_ite_eq_add_add_sum_erase_erase e i j hij t (e i + e j - t)
-  have hi_sum : e i + ∑ k ∈ univ.erase i, e k = d := by
-    rw [add_sum_erase _ _ (mem_univ i), hsum]
-  have hj_sum : e j + ∑ k ∈ (univ.erase i).erase j, e k = ∑ k ∈ univ.erase i, e k := by
-    have hjmem : j ∈ (univ.erase i : Finset (Fin n)) :=
-      mem_erase.mpr ⟨hij.symm, mem_univ j⟩
-    rw [add_sum_erase _ _ hjmem]
-  have hdecomp : e i + e j + ∑ k ∈ (univ.erase i).erase j, e k = d := by
-    linarith [hi_sum, hj_sum]
-  calc (∑ k, (if k = i then t else if k = j then e i + e j - t else e k))
-      = t + (e i + e j - t) + ∑ k ∈ (univ.erase i).erase j, e k := hslice
-    _ = e i + e j + ∑ k ∈ (univ.erase i).erase j, e k := by ring
-    _ = d := hdecomp
-
-/-- Given a weak composition e and distinct positions i, j, construct the composition
-    with value t at position i and (e_i + e_j - t) at position j. -/
-def sliceComposition (e : WeakComposition n d) (i j : Fin n) (hij : i ≠ j)
-    (t : ℤ) (ht : 0 ≤ t) (htq : t ≤ e i + e j) : WeakComposition n d where
-  toFun := fun k => if k = i then t else if k = j then e i + e j - t else e k
-  sum_eq := sum_slice_eq hij e.sum_eq t
-  nonneg := fun k => by
-    split_ifs with hki hkj
-    · exact ht
-    · omega
-    · exact e.nonneg k
-
-/-- The slice sequence for D. -/
-noncomputable def sliceSeq (D : WeakComposition n d → ℚ) (e : WeakComposition n d)
-    (i j : Fin n) (hij : i ≠ j) : ℤ → ℚ := fun t =>
-  if h : 0 ≤ t ∧ t ≤ e i + e j then
-    D (sliceComposition e i j hij t h.1 h.2)
-  else 0
 
 /-- The slice sequence is palindromic when D is symmetric. -/
 lemma sliceSeq_palindromic (D : WeakComposition n d → ℚ)
@@ -729,8 +735,6 @@ theorem concentrated_minimizes (hn : 0 < n) (hd : 0 ≤ d) (D : WeakComposition 
     exact ⟨e', hconc', le_trans hD' hD_decr⟩
 
 namespace SymmetricLogConcaveFunction
-
-variable {n : ℕ} {d : ℤ}
 
 /-- Every symmetric log-concave function on weak compositions is maximized on balanced vectors. -/
 theorem maximized_on_balanced (F : SymmetricLogConcaveFunction n d) (e : WeakComposition n d) :
