@@ -62,7 +62,6 @@ public lemma ext {e e' : WeakComposition n d} (h : ∀ i, e i = e' i) : e = e' :
 @[expose] public def concentrated (hd : 0 ≤ d) (k : Fin n) : WeakComposition n d where
   toFun := fun i => if i = k then d else 0
   sum_eq := by simp only [sum_ite_eq', mem_univ, ite_true]
-  nonneg := fun i => by split_ifs <;> omega
 
 /-- Key lemma: extract two positions from a sum with nested if-then-else. -/
 public lemma sum_ite_ite_eq_add_add_sum_erase_erase
