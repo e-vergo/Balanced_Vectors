@@ -8,18 +8,6 @@ module
 public import BalancedVectors.MainTheorem
 import all BalancedVectors.Proofs.helper_lemmas
 
-/-!
-# Proof of the Main Theorem
-
-This file contains the proof of the main theorem about symmetric log-concave functions
-on weak compositions.
-
-## Main results
-
-- `mainTheorem`: The proof that `StatementOfTheorem` holds, combining the maximizer and
-  minimizer existence results from `helper_lemmas`.
--/
-
 open Finset BigOperators Function
 
 /-- **Main Theorem (Paper formulation - Combined).**

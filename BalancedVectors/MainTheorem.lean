@@ -12,11 +12,6 @@ public import BalancedVectors.Definitions
 
 This file contains the statement of the main theorem about symmetric log-concave functions
 on weak compositions.
-
-## Main definitions
-
-- `StatementOfTheorem`: The proposition that for any symmetric log-concave function on
-  weak compositions, balanced vectors maximize the function and concentrated vectors minimize it.
 -/
 
 /-- **Main Theorem Statement.**

@@ -29,6 +29,16 @@ maximization direction, and on `d - maxEntry` for the minimization direction.
 
 open Finset BigOperators Function WeakComposition
 
+/-- Evaluation of concentrated at its concentration point. -/
+@[simp]
+public lemma concentrated_self (hd : 0 ≤ d) (k : Fin n) : (concentrated hd k) k = d := by
+  simp only [concentrated, ite_true]
+
+/-- Evaluation of concentrated away from its concentration point. -/
+@[simp]
+public lemma concentrated_ne (hd : 0 ≤ d) (k j : Fin n) (h : j ≠ k) :
+    (concentrated hd k) j = 0 := by
+  simp only [concentrated, h, ite_false]
 
 /-- Apply log-concavity at a point. -/
 lemma LogConcaveOn.apply {s : ℤ → ℚ} {q : ℤ} (h : LogConcaveOn s q)

@@ -60,16 +60,7 @@ public lemma ext {e e' : WeakComposition n d} (h : ∀ i, e i = e' i) : e = e' :
   sum_eq := by simp only [sum_ite_eq', mem_univ, ite_true]
   nonneg := fun i => by split_ifs <;> omega
 
-/-- Evaluation of concentrated at its concentration point. -/
-@[simp]
-public lemma concentrated_self (hd : 0 ≤ d) (k : Fin n) : (concentrated hd k) k = d := by
-  simp only [concentrated, ite_true]
 
-/-- Evaluation of concentrated away from its concentration point. -/
-@[simp]
-public lemma concentrated_ne (hd : 0 ≤ d) (k j : Fin n) (h : j ≠ k) :
-    (concentrated hd k) j = 0 := by
-  simp only [concentrated, h, ite_false]
 
 /-- Key lemma: extract two positions from a sum with nested if-then-else. -/
 public lemma sum_ite_ite_eq_add_add_sum_erase_erase
