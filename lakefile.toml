@@ -1,0 +1,14 @@
+name = "BalancedVectors"
+defaultTargets = ["BalancedVectors"]
+
+[leanOptions]
+pp.unicode.fun = true
+autoImplicit = true
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+
+[[lean_lib]]
+name = "BalancedVectors"
+globs = ["BalancedVectors.+"]
