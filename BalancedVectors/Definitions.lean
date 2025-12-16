@@ -13,6 +13,15 @@ public import Mathlib.Data.Rat.Defs
 public import Mathlib.Tactic
 
 /-!
+
+## WARNING
+
+This repo contains AI generated proofs which may contain errors. To trust the claimed main result, and for it to be meaningful to have Lean check the actual proofs you must read, understand, and validate the content of this file.
+
+-/
+
+
+/-!
 # Weak Compositions and Symmetric Log-Concave Functions
 
 This file defines weak compositions of an integer `d` into `n` parts, along with
@@ -193,7 +202,6 @@ def LogConcaveOn (s : ℤ → ℚ) (q : ℤ) : Prop :=
 def IsPalindromicOn (s : ℤ → ℚ) (q : ℤ) : Prop :=
   ∀ t, 0 ≤ t → t ≤ q → s t = s (q - t)
 
-
 /-- A sequence is positive on `[0, q]`. -/
 def IsPositiveOn (s : ℤ → ℚ) (q : ℤ) : Prop :=
   ∀ t, 0 ≤ t → t ≤ q → 0 < s t
@@ -207,10 +215,6 @@ noncomputable def maxEntry (e : Fin n → ℤ) (hn : 0 < n) : ℤ :=
 
 /-- The "imbalance" of a vector: sum of squares. -/
 def imbalance (e : Fin n → ℤ) : ℤ := ∑ i, (e i) ^ 2
-
-/-- Count of non-zero entries. -/
-def nonzeroCount (e : Fin n → ℤ) : ℕ :=
-  (Finset.univ.filter (fun i => e i ≠ 0)).card
 
 /-- A vector is balanced if all entries differ by at most 1. -/
 def IsBalanced (e : Fin n → ℤ) : Prop :=
