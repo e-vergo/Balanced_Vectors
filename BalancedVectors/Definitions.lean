@@ -51,11 +51,11 @@ public instance : CoeFun (WeakComposition n d) (fun _ => Fin n → ℤ) :=
   ⟨WeakComposition.toFun⟩
 
 @[ext]
-public lemma ext {e e' : WeakComposition n d} (h : ∀ i, e i = e' i) : e = e' := by
+lemma ext {e e' : WeakComposition n d} (h : ∀ i, e i = e' i) : e = e' := by
   cases e; cases e'; simp only [mk.injEq]; funext i; exact h i
 
 /-- The concentrated vector: all zeros except `d` at position `k`. -/
-@[expose] public def concentrated (hd : 0 ≤ d) (k : Fin n) : WeakComposition n d where
+public def concentrated (hd : 0 ≤ d) (k : Fin n) : WeakComposition n d where
   toFun := fun i => if i = k then d else 0
   sum_eq := by simp only [sum_ite_eq', mem_univ, ite_true]
   nonneg := fun i => by split_ifs <;> omega
@@ -63,7 +63,7 @@ public lemma ext {e e' : WeakComposition n d} (h : ∀ i, e i = e' i) : e = e' :
 
 
 /-- Key lemma: extract two positions from a sum with nested if-then-else. -/
-public lemma sum_ite_ite_eq_add_add_sum_erase_erase
+lemma sum_ite_ite_eq_add_add_sum_erase_erase
     (f : Fin n → ℤ) (i j : Fin n) (hij : i ≠ j) (a b : ℤ) :
     (∑ k, (if k = i then a else if k = j then b else f k))
       = a + b + ∑ k ∈ (univ.erase i).erase j, f k := by
@@ -98,7 +98,7 @@ public lemma sum_ite_ite_eq_add_add_sum_erase_erase
 /-- Auxiliary: the sum of a function that modifies two positions.
     This captures: if we change e at i to (e i - 1) and at j to (e j + 1),
     the total sum is preserved. -/
-public lemma sum_modify_eq {e : Fin n → ℤ} {i j : Fin n} (hij : i ≠ j)
+lemma sum_modify_eq {e : Fin n → ℤ} {i j : Fin n} (hij : i ≠ j)
     (hsum : ∑ k, e k = d) :
     ∑ k, (if k = i then e i - 1 else if k = j then e j + 1 else e k) = d := by
   classical
@@ -123,10 +123,10 @@ public lemma sum_modify_eq {e : Fin n → ℤ} {i j : Fin n} (hij : i ≠ j)
     _ = d := hdecomp
 
 /-- Modify a composition by transferring one unit from position i to position j. -/
-@[expose] public def modify (e : WeakComposition n d) (i j : Fin n)
+public def modify (e : WeakComposition n d) (i j : Fin n)
     (hi : 1 ≤ e i) (hij : i ≠ j) : WeakComposition n d where
   toFun := fun k => if k = i then e i - 1 else if k = j then e j + 1 else e k
-  sum_eq := sum_modify_eq hij e.sum_eq
+  sum_eq := private sum_modify_eq hij e.sum_eq
   nonneg := fun k => by
     split_ifs with hki hkj
     · omega
@@ -134,15 +134,15 @@ public lemma sum_modify_eq {e : Fin n → ℤ} {i j : Fin n} (hij : i ≠ j)
     · exact e.nonneg k
 
 @[simp]
-public lemma modify_at_i (e : WeakComposition n d) (i j : Fin n) (hi : 1 ≤ e i) (hij : i ≠ j) :
+lemma modify_at_i (e : WeakComposition n d) (i j : Fin n) (hi : 1 ≤ e i) (hij : i ≠ j) :
     (e.modify i j hi hij) i = e i - 1 := by simp only [modify, ite_true]
 
 @[simp]
-public lemma modify_at_j (e : WeakComposition n d) (i j : Fin n) (hi : 1 ≤ e i) (hij : i ≠ j) :
+lemma modify_at_j (e : WeakComposition n d) (i j : Fin n) (hi : 1 ≤ e i) (hij : i ≠ j) :
     (e.modify i j hi hij) j = e j + 1 := by simp only [modify, hij.symm, ite_false, ite_true]
 
 @[simp]
-public lemma modify_at_other (e : WeakComposition n d) (i j k : Fin n)
+lemma modify_at_other (e : WeakComposition n d) (i j k : Fin n)
     (hi : 1 ≤ e i) (hij : i ≠ j) (hki : k ≠ i) (hkj : k ≠ j) :
     (e.modify i j hi hij) k = e k := by
   simp only [modify, hki, hkj, ite_false]
@@ -151,9 +151,8 @@ end WeakComposition
 
 variable {n : ℕ} {d : ℤ}
 
-@[expose] public section
 /-- A function on weak compositions that is symmetric under the Sₙ action. -/
-def IsSymmetric (D : WeakComposition n d → ℚ) : Prop :=
+public def IsSymmetric (D : WeakComposition n d → ℚ) : Prop :=
   ∀ (σ : Equiv.Perm (Fin n)) (e : WeakComposition n d),
     D ⟨e ∘ σ.symm,
        by simp only [comp_apply]
@@ -162,18 +161,18 @@ def IsSymmetric (D : WeakComposition n d → ℚ) : Prop :=
        fun i => by simp only [comp_apply]; exact e.nonneg _⟩ = D e
 
 /-- The log-concavity condition for D. -/
-def SatisfiesLogConcavity (D : WeakComposition n d → ℚ) : Prop :=
+public def SatisfiesLogConcavity (D : WeakComposition n d → ℚ) : Prop :=
   ∀ (e : WeakComposition n d) (i j : Fin n) (hij : i ≠ j)
     (hi : 1 ≤ e i) (hj : 1 ≤ e j),
     D e ^ 2 ≥ D (e.modify i j hi hij) * D (e.modify j i hj hij.symm)
 
 /-- D is strictly positive. -/
-def IsStrictlyPositive (D : WeakComposition n d → ℚ) : Prop :=
+public def IsStrictlyPositive (D : WeakComposition n d → ℚ) : Prop :=
   ∀ e, 0 < D e
 
 /-- A function `D` on weak compositions satisfying the three conditions:
     Sₙ-symmetry, log-concavity, and strict positivity.-/
-structure SymmetricLogConcaveFunction (n : ℕ) (d : ℤ) where
+public structure SymmetricLogConcaveFunction (n : ℕ) (d : ℤ) where
   /-- The function D : E(n,d) → ℚ -/
   D : WeakComposition n d → ℚ
   /-- D(e ∘ σ⁻¹) = D(e) for all permutations σ -/
@@ -213,11 +212,11 @@ def nonzeroCount (e : Fin n → ℤ) : ℕ :=
   (Finset.univ.filter (fun i => e i ≠ 0)).card
 
 /-- A vector is balanced if all entries differ by at most 1. -/
-def IsBalanced (e : Fin n → ℤ) : Prop :=
+public def IsBalanced (e : Fin n → ℤ) : Prop :=
   ∀ i j, e i ≤ e j + 1 ∧ e j ≤ e i + 1
 
 /-- A vector is concentrated if it equals `d • δₖ` for some `k`. -/
-def IsConcentrated (d : ℤ) (e : Fin n → ℤ) : Prop :=
+public def IsConcentrated (d : ℤ) (e : Fin n → ℤ) : Prop :=
   ∃ k, ∀ i, e i = if i = k then d else 0
 
 /-! ### Slice Analysis Definitions -/
@@ -261,5 +260,3 @@ noncomputable def sliceSeq (D : WeakComposition n d → ℚ) (e : WeakCompositio
   if h : 0 ≤ t ∧ t ≤ e i + e j then
     D (sliceComposition e i j hij t h.1 h.2)
   else 0
-
-end

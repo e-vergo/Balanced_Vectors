@@ -6,6 +6,7 @@ Authors: Eric Vergo
 module
 
 public import BalancedVectors.Definitions
+import all BalancedVectors.Definitions
 
 /-!
 # Helper Lemmas for the Main Theorem
