@@ -1,10 +1,10 @@
-# Balanced Vectors
+# WARNING
 
-A Lean 4 formalization proving that symmetric log-concave functions on weak compositions are maximized on balanced vectors and minimized on concentrated vectors.
+This repo contains AI generated proofs which may contain errors. To trust the claimed main result, and for it to be meaningful to have Lean check the actual proofs you must read, understand, and validate the content of Definitions.lean.
 
-## Status
+## Balanced Vectors
 
-**Work in progress.** Feedback welcome.
+A Lean 4 formalization proving that symmetric log-concave functions on weak compositions are maximized on balanced vectors and minimized on concentrated vectors. This is a refactoring of Johannes Schmitt's [balanced-vectors-blueprint](https://github.com/schmittj/balanced-vectors-blueprint), which formalized a proof discovered by GPT-5 for an open problem about psi-class integrals on moduli spaces of curves.
 
 ## The Theorem
 
@@ -32,10 +32,6 @@ BalancedVectors/
 The public API exposes exactly two declarations:
 - `StatementOfTheorem : Prop`
 - `mainTheorem : StatementOfTheorem`
-
-## Origin
-
-This is a refactoring of Johannes Schmitt's [balanced-vectors-blueprint](https://github.com/schmittj/balanced-vectors-blueprint), which formalized a proof discovered by GPT-5 for an open problem about psi-class integrals on moduli spaces of curves.
 
 ## Building
 

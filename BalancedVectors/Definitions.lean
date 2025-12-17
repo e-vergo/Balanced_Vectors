@@ -13,6 +13,15 @@ public import Mathlib.Data.Rat.Defs
 public import Mathlib.Tactic
 
 /-!
+
+## WARNING
+
+This repo contains AI generated proofs which may contain errors. To trust the claimed main result, and for it to be meaningful to have Lean check the actual proofs you must read, understand, and validate the content of this file.
+
+-/
+
+
+/-!
 # Weak Compositions and Symmetric Log-Concave Functions
 
 This file defines weak compositions of an integer `d` into `n` parts, along with
