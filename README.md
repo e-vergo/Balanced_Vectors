@@ -33,6 +33,11 @@ The public API exposes exactly two declarations:
 - `StatementOfTheorem : Prop`
 - `mainTheorem : StatementOfTheorem`
 
+## Documentation
+
+API documentation is automatically generated and available at:
+https://e-vergo.github.io/Balanced_Vectors/docs/BalancedVectors/
+
 ## Building
 
 ```bash
