@@ -52,9 +52,13 @@ public structure WeakComposition (n : ℕ) (d : ℤ) where
   /-- The entries sum to `d`. -/
   sum_eq : ∑ i, toFun i = d
   /-- All entries are non-negative. -/
-  nonneg : ∀ i, 0 ≤ toFun i
+  nonneg : ∀ i, 0 ≤ toFun i := by grind
+
 
 namespace WeakComposition
+
+grind_pattern nonneg => self.toFun i
+grind_pattern sum_eq => Finset.sum univ self.toFun
 
 public instance : CoeFun (WeakComposition n d) (fun _ => Fin n → ℤ) :=
   ⟨WeakComposition.toFun⟩
@@ -67,9 +71,6 @@ public lemma ext {e e' : WeakComposition n d} (h : ∀ i, e i = e' i) : e = e' :
 @[expose] public def concentrated (hd : 0 ≤ d) (k : Fin n) : WeakComposition n d where
   toFun := fun i => if i = k then d else 0
   sum_eq := by simp only [sum_ite_eq', mem_univ, ite_true]
-  nonneg := fun i => by split_ifs <;> omega
-
-
 
 /-- Key lemma: extract two positions from a sum with nested if-then-else. -/
 public lemma sum_ite_ite_eq_add_add_sum_erase_erase
@@ -77,32 +78,18 @@ public lemma sum_ite_ite_eq_add_add_sum_erase_erase
     (∑ k, (if k = i then a else if k = j then b else f k))
       = a + b + ∑ k ∈ (univ.erase i).erase j, f k := by
   classical
-  have hjmem : j ∈ (univ.erase i : Finset (Fin n)) :=
-    mem_erase.mpr ⟨hij.symm, mem_univ j⟩
+  have hjmem : j ∈ (univ.erase i : Finset (Fin n)) := by grind
   -- First, split the sum: extract the i-th term
   have step1 : ∑ k, (if k = i then a else if k = j then b else f k) =
       a + ∑ k ∈ univ.erase i, (if k = j then b else f k) := by
     rw [← add_sum_erase _ _ (mem_univ i)]
-    simp only [ite_true]
-    congr 1
-    apply sum_congr rfl
-    intro k hk
-    simp only [mem_erase, ne_eq] at hk
-    simp only [hk.1, ite_false]
+    grind [sum_congr]
   -- Then, extract the j-th term from the remaining sum
   have step2 : ∑ k ∈ univ.erase i, (if k = j then b else f k) =
       b + ∑ k ∈ (univ.erase i).erase j, f k := by
     rw [← add_sum_erase _ _ hjmem]
-    simp only [ite_true]
-    congr 1
-    apply sum_congr rfl
-    intro k hk
-    simp only [mem_erase, ne_eq] at hk
-    simp only [hk.1, ite_false]
-  calc ∑ k, (if k = i then a else if k = j then b else f k)
-      = a + ∑ k ∈ univ.erase i, (if k = j then b else f k) := step1
-    _ = a + (b + ∑ k ∈ (univ.erase i).erase j, f k) := by rw [step2]
-    _ = a + b + ∑ k ∈ (univ.erase i).erase j, f k := by ring
+    grind [sum_congr]
+  grind
 
 /-- Auxiliary: the sum of a function that modifies two positions.
     This captures: if we change e at i to (e i - 1) and at j to (e j + 1),
@@ -110,37 +97,21 @@ public lemma sum_ite_ite_eq_add_add_sum_erase_erase
 public lemma sum_modify_eq {e : Fin n → ℤ} {i j : Fin n} (hij : i ≠ j)
     (hsum : ∑ k, e k = d) :
     ∑ k, (if k = i then e i - 1 else if k = j then e j + 1 else e k) = d := by
-  classical
   have hmod : (∑ k, (if k = i then e i - 1 else if k = j then e j + 1 else e k))
       = (e i - 1) + (e j + 1) + ∑ k ∈ (univ.erase i).erase j, e k := by
     simpa using sum_ite_ite_eq_add_add_sum_erase_erase e i j hij (e i - 1) (e j + 1)
-
   have hi_sum : e i + ∑ k ∈ univ.erase i, e k = d := by
     rw [add_sum_erase _ _ (mem_univ i), hsum]
-
   have hj_sum : e j + ∑ k ∈ (univ.erase i).erase j, e k = ∑ k ∈ univ.erase i, e k := by
-    have hjmem : j ∈ (univ.erase i : Finset (Fin n)) :=
-      mem_erase.mpr ⟨hij.symm, mem_univ j⟩
+    have hjmem : j ∈ (univ.erase i : Finset (Fin n)) := by grind
     rw [add_sum_erase _ _ hjmem]
-
-  have hdecomp : e i + e j + ∑ k ∈ (univ.erase i).erase j, e k = d := by
-    linarith [hi_sum, hj_sum]
-
-  calc (∑ k, (if k = i then e i - 1 else if k = j then e j + 1 else e k))
-      = (e i - 1) + (e j + 1) + ∑ k ∈ (univ.erase i).erase j, e k := hmod
-    _ = e i + e j + ∑ k ∈ (univ.erase i).erase j, e k := by ring
-    _ = d := hdecomp
+  grind
 
 /-- Modify a composition by transferring one unit from position i to position j. -/
 @[expose] public def modify (e : WeakComposition n d) (i j : Fin n)
     (hi : 1 ≤ e i) (hij : i ≠ j) : WeakComposition n d where
   toFun := fun k => if k = i then e i - 1 else if k = j then e j + 1 else e k
   sum_eq := sum_modify_eq hij e.sum_eq
-  nonneg := fun k => by
-    split_ifs with hki hkj
-    · omega
-    · have := e.nonneg j; omega
-    · exact e.nonneg k
 
 end WeakComposition
 
@@ -150,11 +121,10 @@ variable {n : ℕ} {d : ℤ}
 /-- A function on weak compositions that is symmetric under the Sₙ action. -/
 def IsSymmetric (D : WeakComposition n d → ℚ) : Prop :=
   ∀ (σ : Equiv.Perm (Fin n)) (e : WeakComposition n d),
-    D ⟨e ∘ σ.symm,
-       by simp only [comp_apply]
-          have : ∑ x, e.toFun (σ.symm x) = ∑ x, e.toFun x := Equiv.sum_comp σ.symm e.toFun
-          rw [this]; exact e.sum_eq,
-       fun i => by simp only [comp_apply]; exact e.nonneg _⟩ = D e
+    D ⟨e ∘ σ.symm, by
+        have : ∑ x, e.toFun (σ.symm x) = ∑ x, e.toFun x := Equiv.sum_comp σ.symm e.toFun
+        grind,
+       fun i => by grind⟩ = D e
 
 /-- The log-concavity condition for D. -/
 def SatisfiesLogConcavity (D : WeakComposition n d → ℚ) : Prop :=
