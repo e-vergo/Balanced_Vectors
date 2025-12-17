@@ -29,6 +29,94 @@ maximization direction, and on `d - maxEntry` for the minimization direction.
 
 open Finset BigOperators Function WeakComposition
 
+namespace WeakComposition
+
+@[simp]
+lemma modify_at_i (e : WeakComposition n d) (i j : Fin n) (hi : 1 ≤ e i) (hij : i ≠ j) :
+    (e.modify i j hi hij) i = e i - 1 := by simp only [modify, ite_true]
+
+@[simp]
+lemma modify_at_j (e : WeakComposition n d) (i j : Fin n) (hi : 1 ≤ e i) (hij : i ≠ j) :
+    (e.modify i j hi hij) j = e j + 1 := by simp only [modify, hij.symm, ite_false, ite_true]
+
+@[simp]
+lemma modify_at_other (e : WeakComposition n d) (i j k : Fin n)
+    (hi : 1 ≤ e i) (hij : i ≠ j) (hki : k ≠ i) (hkj : k ≠ j) :
+    (e.modify i j hi hij) k = e k := by
+  simp only [modify, hki, hkj, ite_false]
+
+end WeakComposition
+
+/-- A sequence `s : ℤ → ℚ` is log-concave on `[0, q]`. -/
+def LogConcaveOn (s : ℤ → ℚ) (q : ℤ) : Prop :=
+  ∀ t, 1 ≤ t → t ≤ q - 1 → s t ^ 2 ≥ s (t - 1) * s (t + 1)
+
+/-- A sequence is palindromic on `[0, q]`. -/
+def IsPalindromicOn (s : ℤ → ℚ) (q : ℤ) : Prop :=
+  ∀ t, 0 ≤ t → t ≤ q → s t = s (q - t)
+
+
+/-- A sequence is positive on `[0, q]`. -/
+def IsPositiveOn (s : ℤ → ℚ) (q : ℤ) : Prop :=
+  ∀ t, 0 ≤ t → t ≤ q → 0 < s t
+
+/-- The maximum entry of a vector. -/
+def maxEntry (e : Fin n → ℤ) (hn : 0 < n) : ℤ :=
+  ((Finset.univ : Finset (Fin n)).image e).max'
+    (by
+      refine ⟨e ⟨0, hn⟩, ?_⟩
+      exact Finset.mem_image.2 ⟨⟨0, hn⟩, Finset.mem_univ _, rfl⟩)
+
+/-- The "imbalance" of a vector: sum of squares. -/
+def imbalance (e : Fin n → ℤ) : ℤ := ∑ i, (e i) ^ 2
+
+/-- Count of non-zero entries. -/
+def nonzeroCount (e : Fin n → ℤ) : ℕ :=
+  (Finset.univ.filter (fun i => e i ≠ 0)).card
+
+/-! ### Slice Analysis Definitions -/
+
+/-- Auxiliary: sum is preserved when we put t at position i and (q-t) at position j. -/
+lemma sum_slice_eq {e : Fin n → ℤ} {i j : Fin n} (hij : i ≠ j) (hsum : ∑ k, e k = d)
+    (t : ℤ) :
+    ∑ k, (if k = i then t else if k = j then e i + e j - t else e k) = d := by
+  classical
+  have hslice : (∑ k, (if k = i then t else if k = j then e i + e j - t else e k))
+      = t + (e i + e j - t) + ∑ k ∈ (Finset.univ.erase i).erase j, e k := by
+    simpa using WeakComposition.sum_ite_ite_eq_add_add_sum_erase_erase e i j hij t (e i + e j - t)
+  have hi_sum : e i + ∑ k ∈ Finset.univ.erase i, e k = d := by
+    rw [Finset.add_sum_erase _ _ (Finset.mem_univ i), hsum]
+  have hj_sum : e j + ∑ k ∈ (Finset.univ.erase i).erase j, e k = ∑ k ∈ Finset.univ.erase i, e k := by
+    have hjmem : j ∈ (Finset.univ.erase i : Finset (Fin n)) :=
+      Finset.mem_erase.mpr ⟨hij.symm, Finset.mem_univ j⟩
+    rw [Finset.add_sum_erase _ _ hjmem]
+  have hdecomp : e i + e j + ∑ k ∈ (Finset.univ.erase i).erase j, e k = d := by
+    linarith [hi_sum, hj_sum]
+  calc (∑ k, (if k = i then t else if k = j then e i + e j - t else e k))
+      = t + (e i + e j - t) + ∑ k ∈ (Finset.univ.erase i).erase j, e k := hslice
+    _ = e i + e j + ∑ k ∈ (Finset.univ.erase i).erase j, e k := by ring
+    _ = d := hdecomp
+
+/-- Given a weak composition e and distinct positions i, j, construct the composition
+    with value t at position i and (e_i + e_j - t) at position j. -/
+def sliceComposition (e : WeakComposition n d) (i j : Fin n) (hij : i ≠ j)
+    (t : ℤ) (ht : 0 ≤ t) (htq : t ≤ e i + e j) : WeakComposition n d where
+  toFun := fun k => if k = i then t else if k = j then e i + e j - t else e k
+  sum_eq := sum_slice_eq hij e.sum_eq t
+  nonneg := fun k => by
+    split_ifs with hki hkj
+    · exact ht
+    · omega
+    · exact e.nonneg k
+
+/-- The slice sequence for D. -/
+def sliceSeq (D : WeakComposition n d → ℚ) (e : WeakComposition n d)
+    (i j : Fin n) (hij : i ≠ j) : ℤ → ℚ := fun t =>
+  if h : 0 ≤ t ∧ t ≤ e i + e j then
+    D (sliceComposition e i j hij t h.1 h.2)
+  else 0
+
+
 /-- Evaluation of concentrated at its concentration point. -/
 @[simp]
 public lemma concentrated_self (hd : 0 ≤ d) (k : Fin n) : (concentrated hd k) k = d := by
