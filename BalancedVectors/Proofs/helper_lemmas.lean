@@ -30,6 +30,94 @@ maximization direction, and on `d - maxEntry` for the minimization direction.
 
 open Finset BigOperators Function WeakComposition
 
+namespace WeakComposition
+
+@[simp]
+lemma modify_at_i (e : WeakComposition n d) (i j : Fin n) (hi : 1 ≤ e i) (hij : i ≠ j) :
+    (e.modify i j hi hij) i = e i - 1 := by simp only [modify, ite_true]
+
+@[simp]
+lemma modify_at_j (e : WeakComposition n d) (i j : Fin n) (hi : 1 ≤ e i) (hij : i ≠ j) :
+    (e.modify i j hi hij) j = e j + 1 := by simp only [modify, hij.symm, ite_false, ite_true]
+
+@[simp]
+lemma modify_at_other (e : WeakComposition n d) (i j k : Fin n)
+    (hi : 1 ≤ e i) (hij : i ≠ j) (hki : k ≠ i) (hkj : k ≠ j) :
+    (e.modify i j hi hij) k = e k := by
+  simp only [modify, hki, hkj, ite_false]
+
+end WeakComposition
+
+/-- A sequence `s : ℤ → ℚ` is log-concave on `[0, q]`. -/
+def LogConcaveOn (s : ℤ → ℚ) (q : ℤ) : Prop :=
+  ∀ t, 1 ≤ t → t ≤ q - 1 → s t ^ 2 ≥ s (t - 1) * s (t + 1)
+
+/-- A sequence is palindromic on `[0, q]`. -/
+def IsPalindromicOn (s : ℤ → ℚ) (q : ℤ) : Prop :=
+  ∀ t, 0 ≤ t → t ≤ q → s t = s (q - t)
+
+
+/-- A sequence is positive on `[0, q]`. -/
+def IsPositiveOn (s : ℤ → ℚ) (q : ℤ) : Prop :=
+  ∀ t, 0 ≤ t → t ≤ q → 0 < s t
+
+/-- The maximum entry of a vector. -/
+def maxEntry (e : Fin n → ℤ) (hn : 0 < n) : ℤ :=
+  ((Finset.univ : Finset (Fin n)).image e).max'
+    (by
+      refine ⟨e ⟨0, hn⟩, ?_⟩
+      exact Finset.mem_image.2 ⟨⟨0, hn⟩, Finset.mem_univ _, rfl⟩)
+
+/-- The "imbalance" of a vector: sum of squares. -/
+def imbalance (e : Fin n → ℤ) : ℤ := ∑ i, (e i) ^ 2
+
+/-- Count of non-zero entries. -/
+def nonzeroCount (e : Fin n → ℤ) : ℕ :=
+  (Finset.univ.filter (fun i => e i ≠ 0)).card
+
+/-! ### Slice Analysis Definitions -/
+
+/-- Auxiliary: sum is preserved when we put t at position i and (q-t) at position j. -/
+lemma sum_slice_eq {e : Fin n → ℤ} {i j : Fin n} (hij : i ≠ j) (hsum : ∑ k, e k = d)
+    (t : ℤ) :
+    ∑ k, (if k = i then t else if k = j then e i + e j - t else e k) = d := by
+  classical
+  have hslice : (∑ k, (if k = i then t else if k = j then e i + e j - t else e k))
+      = t + (e i + e j - t) + ∑ k ∈ (Finset.univ.erase i).erase j, e k := by
+    simpa using WeakComposition.sum_ite_ite_eq_add_add_sum_erase_erase e i j hij t (e i + e j - t)
+  have hi_sum : e i + ∑ k ∈ Finset.univ.erase i, e k = d := by
+    rw [Finset.add_sum_erase _ _ (Finset.mem_univ i), hsum]
+  have hj_sum : e j + ∑ k ∈ (Finset.univ.erase i).erase j, e k = ∑ k ∈ Finset.univ.erase i, e k := by
+    have hjmem : j ∈ (Finset.univ.erase i : Finset (Fin n)) :=
+      Finset.mem_erase.mpr ⟨hij.symm, Finset.mem_univ j⟩
+    rw [Finset.add_sum_erase _ _ hjmem]
+  have hdecomp : e i + e j + ∑ k ∈ (Finset.univ.erase i).erase j, e k = d := by
+    linarith [hi_sum, hj_sum]
+  calc (∑ k, (if k = i then t else if k = j then e i + e j - t else e k))
+      = t + (e i + e j - t) + ∑ k ∈ (Finset.univ.erase i).erase j, e k := hslice
+    _ = e i + e j + ∑ k ∈ (Finset.univ.erase i).erase j, e k := by ring
+    _ = d := hdecomp
+
+/-- Given a weak composition e and distinct positions i, j, construct the composition
+    with value t at position i and (e_i + e_j - t) at position j. -/
+def sliceComposition (e : WeakComposition n d) (i j : Fin n) (hij : i ≠ j)
+    (t : ℤ) (ht : 0 ≤ t) (htq : t ≤ e i + e j) : WeakComposition n d where
+  toFun := fun k => if k = i then t else if k = j then e i + e j - t else e k
+  sum_eq := sum_slice_eq hij e.sum_eq t
+  nonneg := fun k => by
+    split_ifs with hki hkj
+    · exact ht
+    · omega
+    · exact e.nonneg k
+
+/-- The slice sequence for D. -/
+def sliceSeq (D : WeakComposition n d → ℚ) (e : WeakComposition n d)
+    (i j : Fin n) (hij : i ≠ j) : ℤ → ℚ := fun t =>
+  if h : 0 ≤ t ∧ t ≤ e i + e j then
+    D (sliceComposition e i j hij t h.1 h.2)
+  else 0
+
+
 /-- Evaluation of concentrated at its concentration point. -/
 @[simp]
 public lemma concentrated_self (hd : 0 ≤ d) (k : Fin n) : (concentrated hd k) k = d := by
@@ -383,6 +471,37 @@ lemma sliceSeq_positive (D : WeakComposition n d → ℚ)
   simp only [sliceSeq, ht, htq, and_self, ↓reduceDIte]
   exact hpos _
 
+/-- A weak composition equals its slice at its own i-th entry. -/
+lemma self_eq_sliceComposition (e : WeakComposition n d) (i j : Fin n) (hij : i ≠ j)
+    (hlo : 0 ≤ e i) (hhi : e i ≤ e i + e j) :
+    e = sliceComposition e i j hij (e i) hlo hhi := by
+  refine WeakComposition.ext (fun k => ?_)
+  simp only [sliceComposition]
+  by_cases hki : k = i
+  · simp only [hki, ite_true]
+  · by_cases hkj : k = j
+    · simp only [hkj, ite_true, if_neg hij.symm]; ring
+    · simp only [hki, hkj, ite_false]
+
+/-- Modifying a weak composition equals its slice at (e i - 1). -/
+lemma modify_eq_sliceComposition (e : WeakComposition n d) (i j : Fin n) (hij : i ≠ j)
+    (hi : 1 ≤ e i) (hlo : 0 ≤ e i - 1) (hhi : e i - 1 ≤ e i + e j) :
+    e.modify i j hi hij = sliceComposition e i j hij (e i - 1) hlo hhi := by
+  refine WeakComposition.ext (fun k => ?_)
+  simp only [WeakComposition.modify, sliceComposition]
+  by_cases hki : k = i
+  · simp only [hki, ite_true]
+  · by_cases hkj : k = j
+    · simp only [hkj, ite_true, if_neg hij.symm]; ring
+    · simp only [hki, hkj, ite_false]
+
+/-- Evaluation of sliceSeq when t is in range. -/
+lemma sliceSeq_eq (D : WeakComposition n d → ℚ) (e : WeakComposition n d)
+    (i j : Fin n) (hij : i ≠ j) (t : ℤ) (hlo : 0 ≤ t) (hhi : t ≤ e i + e j) :
+    sliceSeq D e i j hij t = D (sliceComposition e i j hij t hlo hhi) := by
+  unfold sliceSeq
+  rw [dif_pos ⟨hlo, hhi⟩]
+
 /-! ### Main Theorems -/
 
 /-- The balancing step weakly increases D when entries differ by ≥ 2. -/
@@ -403,31 +522,14 @@ lemma balancing_increases_D (D : WeakComposition n d → ℚ)
   have hei_hi : e i ≤ q := by simp only [hq_def]; linarith [e.nonneg j]
   have hem1_lo : 0 ≤ e i - 1 := by omega
   have hem1_hi : e i - 1 ≤ q := by simp only [hq_def]; omega
-  have he_eq_slice : e = sliceComposition e i j hij (e i) hei_lo hei_hi := by
-    refine WeakComposition.ext (fun k => ?_)
-    simp only [sliceComposition]
-    by_cases hki : k = i
-    · simp only [hki, ite_true]
-    · by_cases hkj : k = j
-      · simp only [hkj, ite_true, if_neg hij.symm]; ring
-      · simp only [hki, hkj, ite_false]
-  have hmod_eq_slice : e.modify i j hi hij = sliceComposition e i j hij (e i - 1) hem1_lo hem1_hi := by
-    refine WeakComposition.ext (fun k => ?_)
-    simp only [WeakComposition.modify, sliceComposition]
-    by_cases hki : k = i
-    · simp only [hki, ite_true]
-    · by_cases hkj : k = j
-      · simp only [hkj, ite_true, if_neg hij.symm]; ring
-      · simp only [hki, hkj, ite_false]
+  have he_eq_slice : e = sliceComposition e i j hij (e i) hei_lo hei_hi :=
+    self_eq_sliceComposition e i j hij hei_lo hei_hi
+  have hmod_eq_slice : e.modify i j hi hij = sliceComposition e i j hij (e i - 1) hem1_lo hem1_hi :=
+    modify_eq_sliceComposition e i j hij hi hem1_lo hem1_hi
   have h2ei_gt_q : 2 * (e i) > q := by simp only [hq_def]; omega
   have hdecr := hunimodal.2 (e i) h2ei_gt_q hei_hi
-  have hslice_ei : sliceSeq D e i j hij (e i) = D (sliceComposition e i j hij (e i) hei_lo hei_hi) := by
-    unfold sliceSeq
-    rw [dif_pos ⟨hei_lo, hei_hi⟩]
-  have hslice_em1 : sliceSeq D e i j hij (e i - 1) =
-      D (sliceComposition e i j hij (e i - 1) hem1_lo hem1_hi) := by
-    unfold sliceSeq
-    rw [dif_pos ⟨hem1_lo, hem1_hi⟩]
+  have hslice_ei := sliceSeq_eq D e i j hij (e i) hei_lo hei_hi
+  have hslice_em1 := sliceSeq_eq D e i j hij (e i - 1) hem1_lo hem1_hi
   rw [hslice_ei, hslice_em1, ← he_eq_slice, ← hmod_eq_slice] at hdecr
   exact hdecr
 
@@ -487,31 +589,15 @@ lemma concentrating_decreases_D (D : WeakComposition n d → ℚ)
   have hej_hi : e j ≤ q := by simp only [hq_def]; linarith [e.nonneg i]
   have hejm1_lo : 0 ≤ e j - 1 := by omega
   have hejm1_hi : e j - 1 ≤ q := by simp only [hq_def]; omega
-  have he_eq_slice : e = sliceComposition e j i hij.symm (e j) hej_lo hej_hi := by
-    refine WeakComposition.ext (fun k => ?_)
-    simp only [sliceComposition]
-    by_cases hkj : k = j
-    · simp only [hkj, ite_true]
-    · by_cases hki : k = i
-      · simp only [hki, ite_true, if_neg hij]; ring
-      · simp only [hkj, hki, ite_false]
+  have he_eq_slice : e = sliceComposition e j i hij.symm (e j) hej_lo hej_hi :=
+    self_eq_sliceComposition e j i hij.symm hej_lo hej_hi
   have hmod_eq_slice : e.modify j i hj hij.symm =
-      sliceComposition e j i hij.symm (e j - 1) hejm1_lo hejm1_hi := by
-    refine WeakComposition.ext (fun k => ?_)
-    simp only [WeakComposition.modify, sliceComposition]
-    by_cases hkj : k = j
-    · simp only [hkj, ite_true]
-    · by_cases hki : k = i
-      · simp only [hki, ite_true, if_neg hij]; ring
-      · simp only [hkj, hki, ite_false]
+      sliceComposition e j i hij.symm (e j - 1) hejm1_lo hejm1_hi :=
+    modify_eq_sliceComposition e j i hij.symm hj hejm1_lo hejm1_hi
   have h2ej_lt_q : 2 * (e j - 1) < q := by simp only [hq_def]; omega
   have hincr := hunimodal.1 (e j - 1) hejm1_lo h2ej_lt_q
-  have hslice_ej : sliceSeq D e j i hij.symm (e j) =
-      D (sliceComposition e j i hij.symm (e j) hej_lo hej_hi) := by
-    unfold sliceSeq; rw [dif_pos ⟨hej_lo, hej_hi⟩]
-  have hslice_ejm1 : sliceSeq D e j i hij.symm (e j - 1) =
-      D (sliceComposition e j i hij.symm (e j - 1) hejm1_lo hejm1_hi) := by
-    unfold sliceSeq; rw [dif_pos ⟨hejm1_lo, hejm1_hi⟩]
+  have hslice_ej := sliceSeq_eq D e j i hij.symm (e j) hej_lo hej_hi
+  have hslice_ejm1 := sliceSeq_eq D e j i hij.symm (e j - 1) hejm1_lo hejm1_hi
   simp only [Int.sub_add_cancel] at hincr
   rw [hslice_ejm1, hslice_ej, ← hmod_eq_slice, ← he_eq_slice] at hincr
   exact hincr
@@ -648,31 +734,15 @@ lemma concentrating_to_max_decreases_D (D : WeakComposition n d → ℚ)
   have hej_hi : e j ≤ q := by simp only [hq_def]; linarith [e.nonneg i]
   have hejm1_lo : 0 ≤ e j - 1 := by omega
   have hejm1_hi : e j - 1 ≤ q := by simp only [hq_def]; omega
-  have he_eq_slice : e = sliceComposition e j i hij.symm (e j) hej_lo hej_hi := by
-    refine WeakComposition.ext (fun k => ?_)
-    simp only [sliceComposition]
-    by_cases hkj : k = j
-    · simp only [hkj, ite_true]
-    · by_cases hki : k = i
-      · simp only [hki, ite_true, if_neg hij]; ring
-      · simp only [hkj, hki, ite_false]
+  have he_eq_slice : e = sliceComposition e j i hij.symm (e j) hej_lo hej_hi :=
+    self_eq_sliceComposition e j i hij.symm hej_lo hej_hi
   have hmod_eq_slice : e.modify j i hj hij.symm =
-      sliceComposition e j i hij.symm (e j - 1) hejm1_lo hejm1_hi := by
-    refine WeakComposition.ext (fun k => ?_)
-    simp only [WeakComposition.modify, sliceComposition]
-    by_cases hkj : k = j
-    · simp only [hkj, ite_true]
-    · by_cases hki : k = i
-      · simp only [hki, ite_true, if_neg hij]; ring
-      · simp only [hkj, hki, ite_false]
+      sliceComposition e j i hij.symm (e j - 1) hejm1_lo hejm1_hi :=
+    modify_eq_sliceComposition e j i hij.symm hj hejm1_lo hejm1_hi
   have h2ej_lt_q : 2 * (e j - 1) < q := by simp only [hq_def]; omega
   have hincr := hunimodal.1 (e j - 1) hejm1_lo h2ej_lt_q
-  have hslice_ej : sliceSeq D e j i hij.symm (e j) =
-      D (sliceComposition e j i hij.symm (e j) hej_lo hej_hi) := by
-    unfold sliceSeq; rw [dif_pos ⟨hej_lo, hej_hi⟩]
-  have hslice_ejm1 : sliceSeq D e j i hij.symm (e j - 1) =
-      D (sliceComposition e j i hij.symm (e j - 1) hejm1_lo hejm1_hi) := by
-    unfold sliceSeq; rw [dif_pos ⟨hejm1_lo, hejm1_hi⟩]
+  have hslice_ej := sliceSeq_eq D e j i hij.symm (e j) hej_lo hej_hi
+  have hslice_ejm1 := sliceSeq_eq D e j i hij.symm (e j - 1) hejm1_lo hejm1_hi
   simp only [Int.sub_add_cancel] at hincr
   rw [hslice_ejm1, hslice_ej, ← hmod_eq_slice, ← he_eq_slice] at hincr
   exact hincr
