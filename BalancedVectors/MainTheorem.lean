@@ -5,7 +5,7 @@ Authors: Eric Vergo
 -/
 module
 
-public import BalancedVectors.Definitions
+public import BalancedVectors.Definitions.Basic
 
 /-!
 # Statement of the Main Theorem
@@ -13,6 +13,8 @@ public import BalancedVectors.Definitions
 This file contains the statement of the main theorem about symmetric log-concave functions
 on weak compositions.
 -/
+
+namespace BalancedVectors
 
 /-- **Main Theorem Statement.**
     For any symmetric log-concave function D on weak compositions E(n,d):
@@ -22,3 +24,5 @@ on weak compositions.
   ∀ (n : ℕ) (d : ℤ) (_hn : 0 < n) (_hd : 0 ≤ d) (F : SymmetricLogConcaveFunction n d),
     (∃ b : WeakComposition n d, IsBalanced b.toFun ∧ ∀ e, F.D e ≤ F.D b) ∧
     (∃ c : WeakComposition n d, IsConcentrated d c.toFun ∧ ∀ e, F.D c ≤ F.D e)
+
+end BalancedVectors

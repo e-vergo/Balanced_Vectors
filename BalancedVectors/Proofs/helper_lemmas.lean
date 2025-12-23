@@ -5,8 +5,8 @@ Authors: Eric Vergo
 -/
 module
 
-public import BalancedVectors.Definitions
-import all BalancedVectors.Definitions
+public import BalancedVectors.Definitions.Basic
+import all BalancedVectors.Definitions.Basic
 
 /-!
 # Helper Lemmas for the Main Theorem

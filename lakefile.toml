@@ -9,6 +9,10 @@ autoImplicit = true
 name = "mathlib"
 git = "https://github.com/leanprover-community/mathlib4"
 
+[[require]]
+name = "TAIL"
+git = "https://github.com/e-vergo/TAIL.git"
+
 [[lean_lib]]
 name = "BalancedVectors"
 globs = ["BalancedVectors.+"]
